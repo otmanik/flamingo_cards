@@ -542,6 +542,7 @@ final List<CardPack> allCardPacks = [
     description: 'Questions that hit too deep.',
     questions: deepQuestions,
     color: Colors.indigo[300]!,
+    category: 'deep',
   ),
   CardPack(
     id: 'couple',
@@ -549,6 +550,7 @@ final List<CardPack> allCardPacks = [
     description: 'Questions that will leave you feeling closer.',
     questions: coupleQuestions,
     color: Colors.red[300]!,
+    category: 'couples',
   ),
   CardPack(
     id: 'tea',
@@ -556,6 +558,7 @@ final List<CardPack> allCardPacks = [
     description: 'pov: you just had an hour-long gossip session.',
     questions: spillTheTea,
     color: Colors.teal[300]!,
+    category: 'friends',
   ),
   CardPack(
     id: 'late_night',
@@ -563,6 +566,7 @@ final List<CardPack> allCardPacks = [
     description: 'Get to know each other — for real.',
     questions: lateNightTalks,
     color: Colors.deepPurple[300]!,
+    category: 'deep',
   ),
   CardPack(
     id: 'soulmates',
@@ -570,6 +574,7 @@ final List<CardPack> allCardPacks = [
     description: 'Get real and vulnerable and deepen your love.',
     questions: forSoulmates,
     color: Colors.pink[200]!,
+    category: 'couples',
   ),
   CardPack(
     id: 'juicy',
@@ -577,6 +582,7 @@ final List<CardPack> allCardPacks = [
     description: 'All about relationships, cheating, and exes!',
     questions: juicyConvos,
     color: Colors.orange[400]!,
+    category: 'party',
   ),
   CardPack(
     id: 'besties',
@@ -584,6 +590,7 @@ final List<CardPack> allCardPacks = [
     description: 'How well do you really know them?',
     questions: forBestFriends,
     color: Colors.lightBlue[300]!,
+    category: 'friends',
   ),
   CardPack(
     id: 'therapy',
@@ -591,6 +598,7 @@ final List<CardPack> allCardPacks = [
     description: 'Deep & rarely-asked questions. Meant to heal.',
     questions: coupleTherapy,
     color: Colors.brown[300]!,
+    category: 'couples',
   ),
   CardPack(
     id: 'confessions',
@@ -598,6 +606,7 @@ final List<CardPack> allCardPacks = [
     description: 'Expose your hidden secrets; no one is safe.',
     questions: confessions,
     color: Colors.grey[500]!,
+    category: 'party',
   ),
   CardPack(
     id: 'getting_to_know',
@@ -605,6 +614,7 @@ final List<CardPack> allCardPacks = [
     description: 'Questions to meet someone new.',
     questions: gettingToKnow,
     color: Colors.green[300]!,
+    category: 'friends',
   ),
   CardPack(
     id: 'long_distance',
@@ -612,6 +622,7 @@ final List<CardPack> allCardPacks = [
     description: 'Warning: this will make it difficult to hang up.',
     questions: forLongDistance,
     color: Colors.cyan[300]!,
+    category: 'couples',
   ),
   CardPack(
     id: 'spicy',
@@ -619,6 +630,7 @@ final List<CardPack> allCardPacks = [
     description: 'Turn up the heat with – extra risqué dares.',
     questions: spicyQuestions,
     color: Colors.red[600]!,
+    category: 'party',
   ), // Needs dare handling
   CardPack(
     id: 'siblings',
@@ -626,6 +638,7 @@ final List<CardPack> allCardPacks = [
     description: 'Ask each other before it’s too late.',
     questions: forSiblings,
     color: Colors.yellow[700]!,
+    category: 'friends',
   ),
   CardPack(
     id: 'naughty',
@@ -633,6 +646,7 @@ final List<CardPack> allCardPacks = [
     description: 'Questions for every couple\'s favorite subject.',
     questions: naughtyQuestions,
     color: Colors.purple[400]!,
+    category: 'couples',
   ),
   CardPack(
     id: 'wyr',
@@ -640,5 +654,6 @@ final List<CardPack> allCardPacks = [
     description: 'The classic game but much more intense.',
     questions: wouldYouRather,
     color: Colors.lime[600]!,
+    category: 'party',
   ),
 ];

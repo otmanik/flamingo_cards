@@ -1,3 +1,4 @@
+import 'package:flamingo_cards/screens/settings_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -234,7 +235,7 @@ class _PackSelectionScreenState extends State<PackSelectionScreen>
       // Apply category filter
       final matchesCategory =
           _selectedCategory == 'All' ||
-          pack.name.toLowerCase().contains(_selectedCategory.toLowerCase());
+          pack.category.toLowerCase().contains(_selectedCategory.toLowerCase());
 
       return matchesSearch && matchesCategory;
     }).toList();
@@ -272,7 +273,12 @@ class _PackSelectionScreenState extends State<PackSelectionScreen>
             IconButton(
               icon: const Icon(Icons.settings_outlined, color: Colors.white),
               onPressed: () {
-                // Settings functionality
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => SettingsScreen(),
+                  ), // Assuming SettingsScreen is a StatefulWidget or StatelessWidget
+                );
               },
             ),
             const SizedBox(width: 8),
