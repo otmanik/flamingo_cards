@@ -1,3 +1,4 @@
+import 'package:flamingo_cards/screens/favourite_screen.dart';
 import 'package:flamingo_cards/screens/settings_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
@@ -61,6 +62,17 @@ class _PackSelectionScreenState extends State<PackSelectionScreen>
         });
         _animationController.forward();
       }
+    });
+  }
+
+  void _navigateToFavorites() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const FavoritesScreen()),
+    ).then((_) {
+      // Optional: Reload dark mode setting if it could change
+      // while viewing favorites (though unlikely from FavoritesScreen itself)
+      _loadDarkModeSetting();
     });
   }
 
@@ -304,6 +316,14 @@ class _PackSelectionScreenState extends State<PackSelectionScreen>
             IconButton(
               icon: const Icon(Icons.info_outline, color: Colors.white),
               onPressed: () => _showInfoBottomSheet(context),
+            ),
+            IconButton(
+              icon: const Icon(
+                Icons.favorite_border,
+                color: Colors.white,
+              ), // Or Icons.favorite
+              tooltip: 'My Favorites', // Added tooltip
+              onPressed: _navigateToFavorites, // Call the navigation function
             ),
             IconButton(
               icon: const Icon(Icons.settings_outlined, color: Colors.white),

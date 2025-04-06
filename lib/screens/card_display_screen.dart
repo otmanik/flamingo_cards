@@ -26,18 +26,18 @@ class _CardDisplayScreenState extends State<CardDisplayScreen>
   bool _isFirstLoad = true;
   bool _darkMode = false;
 
-  // Animation controllers
   late AnimationController _flipAnimationController;
   late Animation<double> _flipAnimation;
   late ConfettiController _confettiController;
 
-  // Timer for auto-flip
   int _remainingSeconds = 5;
   bool _isTimerRunning = false;
   Timer? _timer;
 
-  // Favorite cards tracking
-  final Set<String> _favoriteCards = {};
+  // Use Set for efficient lookups and store question strings
+  final Set<String> _favoriteQuestions = {};
+  // Key for SharedPreferences
+  static const String _favoritesPrefKey = 'favoriteCardQuestions';
 
   @override
   void initState() {
@@ -45,7 +45,6 @@ class _CardDisplayScreenState extends State<CardDisplayScreen>
     _pageController = PageController();
     _shuffledQuestions = List.from(widget.pack.questions)..shuffle(Random());
 
-    // Setup flip animation
     _flipAnimationController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 400),
@@ -57,26 +56,32 @@ class _CardDisplayScreenState extends State<CardDisplayScreen>
       ),
     );
 
-    // Setup confetti animation
     _confettiController = ConfettiController(
       duration: const Duration(seconds: 2),
     );
 
-    // Load dark mode setting
-    _loadDarkModeSetting();
+    _loadSettingsAndFavorites(); // Changed to load both settings and favorites
 
-    // Haptic feedback on first load
     Future.delayed(const Duration(milliseconds: 300), () {
       HapticFeedback.mediumImpact();
     });
   }
 
-  // Load the dark mode setting from shared preferences
-  Future<void> _loadDarkModeSetting() async {
+  // Combined loading function
+  Future<void> _loadSettingsAndFavorites() async {
     final prefs = await SharedPreferences.getInstance();
+    final favoriteList = prefs.getStringList(_favoritesPrefKey) ?? [];
     setState(() {
       _darkMode = prefs.getBool('darkMode') ?? true;
+      _favoriteQuestions.clear();
+      _favoriteQuestions.addAll(favoriteList);
     });
+  }
+
+  // Function to save favorites
+  Future<void> _saveFavorites() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setStringList(_favoritesPrefKey, _favoriteQuestions.toList());
   }
 
   @override
@@ -90,7 +95,6 @@ class _CardDisplayScreenState extends State<CardDisplayScreen>
 
   void _goToNextCard() {
     if (_currentIndex < _shuffledQuestions.length - 1) {
-      // Reset flip state before going to next
       setState(() {
         _isCardFlipped = false;
         _isFirstLoad = false;
@@ -106,7 +110,6 @@ class _CardDisplayScreenState extends State<CardDisplayScreen>
 
       HapticFeedback.selectionClick();
     } else {
-      // At the last card, show celebration
       _confettiController.play();
 
       ScaffoldMessenger.of(context).showSnackBar(
@@ -128,7 +131,6 @@ class _CardDisplayScreenState extends State<CardDisplayScreen>
 
   void _goToPreviousCard() {
     if (_currentIndex > 0) {
-      // Reset flip state before going to previous
       setState(() {
         _isCardFlipped = false;
         _isFirstLoad = false;
@@ -204,28 +206,38 @@ class _CardDisplayScreenState extends State<CardDisplayScreen>
     );
   }
 
-  void _toggleFavorite() {
+  // Updated toggleFavorite to use SharedPreferences
+  void _toggleFavorite() async {
+    // Make async
     final currentQuestion = _shuffledQuestions[_currentIndex];
+    bool isCurrentlyFavorite = _favoriteQuestions.contains(currentQuestion);
 
     setState(() {
-      if (_favoriteCards.contains(currentQuestion)) {
-        _favoriteCards.remove(currentQuestion);
+      if (isCurrentlyFavorite) {
+        _favoriteQuestions.remove(currentQuestion);
+        // Optional: Show feedback that it was removed
       } else {
-        _favoriteCards.add(currentQuestion);
-        // Small confetti burst when adding to favorites
-        _confettiController.play();
+        _favoriteQuestions.add(currentQuestion);
+        _confettiController.play(); // Play confetti only when adding
+        // Optional: Show feedback that it was added
       }
     });
+
+    // Save the updated list to SharedPreferences
+    await _saveFavorites();
+    HapticFeedback.mediumImpact(); // Give feedback on tap
   }
 
   void _shareCard() {
     final currentQuestion = _shuffledQuestions[_currentIndex];
-    Share.share(
-      'Check out this card from Flamingo Cards: "$currentQuestion" #FlamingoCards',
-    );
+    Share.share('Check out this card from Flamingo Cards: "$currentQuestion"');
   }
 
   void _showOptionsBottomSheet() {
+    // Check favorite status *before* showing the sheet
+    final currentQuestion = _shuffledQuestions[_currentIndex];
+    final isFavorite = _favoriteQuestions.contains(currentQuestion);
+
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
@@ -267,23 +279,16 @@ class _CardDisplayScreenState extends State<CardDisplayScreen>
                     _shareCard();
                   },
                 ),
+                // Update favorite option tile based on the state when opened
                 _buildOptionTile(
-                  icon:
-                      _favoriteCards.contains(_shuffledQuestions[_currentIndex])
-                          ? Icons.favorite
-                          : Icons.favorite_border,
+                  icon: isFavorite ? Icons.favorite : Icons.favorite_border,
                   title:
-                      _favoriteCards.contains(_shuffledQuestions[_currentIndex])
-                          ? 'Remove from Favorites'
-                          : 'Add to Favorites',
+                      isFavorite ? 'Remove from Favorites' : 'Add to Favorites',
                   onTap: () {
                     Navigator.pop(ctx);
-                    _toggleFavorite();
+                    _toggleFavorite(); // This will handle the state update and save
                   },
-                  iconColor:
-                      _favoriteCards.contains(_shuffledQuestions[_currentIndex])
-                          ? Colors.red
-                          : null,
+                  iconColor: isFavorite ? Colors.red : null,
                 ),
                 _buildOptionTile(
                   icon: Icons.help_outline,
@@ -352,7 +357,8 @@ class _CardDisplayScreenState extends State<CardDisplayScreen>
                 ),
                 _buildHowToPlayStep(
                   number: '4',
-                  text: 'Save your favorites or share cards with friends!',
+                  text:
+                      'Save your favorites ❤️ or share cards with friends!', // Updated text
                 ),
               ],
             ),
@@ -419,11 +425,19 @@ class _CardDisplayScreenState extends State<CardDisplayScreen>
             ? Colors.black87
             : Colors.white;
 
-    // Background color based on dark mode
     final backgroundColor =
         _darkMode
             ? Color.lerp(Colors.black, widget.pack.color, 0.1)!
             : widget.pack.color.withOpacity(0.1);
+
+    // Check favorite status for the current card
+    final currentQuestion =
+        _shuffledQuestions.isNotEmpty
+            ? _shuffledQuestions[_currentIndex]
+            : ''; // Handle empty list case
+    final bool isCurrentCardFavorite = _favoriteQuestions.contains(
+      currentQuestion,
+    );
 
     return Scaffold(
       extendBodyBehindAppBar: true,
@@ -434,14 +448,16 @@ class _CardDisplayScreenState extends State<CardDisplayScreen>
         elevation: 0,
         actions: [
           IconButton(
+            // Update icon based on the persisted state
             icon: Icon(
-              _favoriteCards.contains(_shuffledQuestions[_currentIndex])
-                  ? Icons.favorite
-                  : Icons.favorite_border,
-              color: textColor,
+              isCurrentCardFavorite ? Icons.favorite : Icons.favorite_border,
+              color:
+                  isCurrentCardFavorite
+                      ? Colors.redAccent
+                      : textColor, // Highlight if favorite
             ),
-            onPressed: _toggleFavorite,
-            tooltip: 'Favorite',
+            onPressed: _toggleFavorite, // This now saves the state
+            tooltip: isCurrentCardFavorite ? 'Remove Favorite' : 'Add Favorite',
           ),
           IconButton(
             icon: Icon(Icons.more_vert, color: textColor),
@@ -453,7 +469,6 @@ class _CardDisplayScreenState extends State<CardDisplayScreen>
       backgroundColor: backgroundColor,
       body: Stack(
         children: [
-          // Confetti animation
           Align(
             alignment: Alignment.topCenter,
             child: ConfettiWidget(
@@ -473,8 +488,6 @@ class _CardDisplayScreenState extends State<CardDisplayScreen>
               ],
             ),
           ),
-
-          // Main content
           Column(
             children: [
               Expanded(
@@ -486,9 +499,11 @@ class _CardDisplayScreenState extends State<CardDisplayScreen>
                       _currentIndex = index;
                       _isCardFlipped = false;
                       _isFirstLoad = false;
+                      // Reset timer and animation when page changes
+                      _timer?.cancel();
+                      _isTimerRunning = false;
+                      _flipAnimationController.reset();
                     });
-                    _flipAnimationController.reset();
-                    _timer?.cancel();
                   },
                   itemBuilder: (context, index) {
                     bool isDare = _shuffledQuestions[index]
@@ -498,6 +513,10 @@ class _CardDisplayScreenState extends State<CardDisplayScreen>
                         isDare
                             ? _shuffledQuestions[index].substring(5).trim()
                             : _shuffledQuestions[index];
+                    // Determine favorite status for *this specific* card in the builder
+                    bool isThisCardFavorite = _favoriteQuestions.contains(
+                      _shuffledQuestions[index],
+                    );
 
                     return Padding(
                       padding: const EdgeInsets.symmetric(
@@ -509,25 +528,26 @@ class _CardDisplayScreenState extends State<CardDisplayScreen>
                         child: AnimatedBuilder(
                           animation: _flipAnimationController,
                           builder: (context, child) {
+                            // Determine angle based on flip state, not animation value directly
                             final angle =
                                 _isCardFlipped
-                                    ? (_flipAnimation.value * pi)
-                                    : (1 - _flipAnimation.value) * pi;
+                                    ? _flipAnimation.value * pi
+                                    : 0.0;
+                            // Use a threshold to switch between front and back views
+                            final isShowingBack = _flipAnimation.value > 0.5;
 
                             return Transform(
+                              // Apply the rotation based on the animation value
                               transform:
                                   Matrix4.identity()
-                                    ..setEntry(3, 2, 0.001)
-                                    ..rotateY(angle),
+                                    ..setEntry(3, 2, 0.001) // Perspective
+                                    ..rotateY(_flipAnimation.value * pi),
                               alignment: Alignment.center,
+                              // Conditionally display front or back based on animation progress
                               child:
-                                  angle < pi / 2
-                                      ? _buildCardFront(
-                                        isDare,
-                                        cardText,
-                                        textColor,
-                                      )
-                                      : Transform(
+                                  isShowingBack
+                                      ? Transform(
+                                        // Counter-rotate the back view
                                         transform:
                                             Matrix4.identity()..rotateY(pi),
                                         alignment: Alignment.center,
@@ -535,7 +555,14 @@ class _CardDisplayScreenState extends State<CardDisplayScreen>
                                           isDare,
                                           cardText,
                                           textColor,
+                                          // Pass favorite status to back card
+                                          isThisCardFavorite,
                                         ),
+                                      )
+                                      : _buildCardFront(
+                                        isDare,
+                                        cardText,
+                                        textColor,
                                       ),
                             );
                           },
@@ -545,8 +572,6 @@ class _CardDisplayScreenState extends State<CardDisplayScreen>
                   },
                 ),
               ),
-
-              // Timer progress indicator (only when not flipped)
               if (_isTimerRunning && !_isCardFlipped)
                 Padding(
                   padding: const EdgeInsets.only(bottom: 8),
@@ -575,8 +600,6 @@ class _CardDisplayScreenState extends State<CardDisplayScreen>
                     ],
                   ),
                 ),
-
-              // Navigation controls
               Padding(
                 padding: const EdgeInsets.only(
                   bottom: 30.0,
@@ -594,23 +617,18 @@ class _CardDisplayScreenState extends State<CardDisplayScreen>
                       onPressed: _currentIndex > 0 ? _goToPreviousCard : null,
                       tooltip: 'Previous Card',
                     ),
-
-                    // Auto-reveal timer button
                     if (!_isTimerRunning && !_isCardFlipped)
                       IconButton(
                         icon: Icon(Icons.timer, color: widget.pack.color),
                         onPressed: _startTimer,
                         tooltip: 'Auto-reveal in 5 seconds',
                       ),
-
-                    // Shuffle button
                     if (_isCardFlipped)
                       IconButton(
                         icon: Icon(Icons.shuffle, color: widget.pack.color),
                         onPressed: _shuffleCards,
                         tooltip: 'Shuffle Cards',
                       ),
-
                     Text(
                       '${_currentIndex + 1} / ${_shuffledQuestions.length}',
                       style: GoogleFonts.poppins(
@@ -619,15 +637,12 @@ class _CardDisplayScreenState extends State<CardDisplayScreen>
                         fontWeight: FontWeight.w500,
                       ),
                     ),
-
-                    // Share button
                     if (_isCardFlipped)
                       IconButton(
                         icon: Icon(Icons.share, color: widget.pack.color),
                         onPressed: _shareCard,
                         tooltip: 'Share Card',
                       ),
-
                     IconButton(
                       icon: Icon(
                         Icons.arrow_forward_ios,
@@ -660,7 +675,6 @@ class _CardDisplayScreenState extends State<CardDisplayScreen>
       color: cardBackgroundColor,
       child: Stack(
         children: [
-          // Background pattern
           Positioned.fill(
             child: ClipRRect(
               borderRadius: BorderRadius.circular(20.0),
@@ -674,13 +688,10 @@ class _CardDisplayScreenState extends State<CardDisplayScreen>
               ),
             ),
           ),
-
-          // Card content
           Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                // Pack logo
                 Container(
                   width: 100,
                   height: 100,
@@ -695,8 +706,6 @@ class _CardDisplayScreenState extends State<CardDisplayScreen>
                   ),
                 ),
                 const SizedBox(height: 24),
-
-                // Tap instruction
                 Container(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 16,
@@ -728,8 +737,6 @@ class _CardDisplayScreenState extends State<CardDisplayScreen>
               ],
             ),
           ),
-
-          // Pack name watermark
           Positioned(
             bottom: 24,
             left: 0,
@@ -750,14 +757,19 @@ class _CardDisplayScreenState extends State<CardDisplayScreen>
     );
   }
 
-  Widget _buildCardBack(bool isDare, String cardText, Color textColor) {
+  // Added isFavorite parameter
+  Widget _buildCardBack(
+    bool isDare,
+    String cardText,
+    Color textColor,
+    bool isFavorite,
+  ) {
     return Card(
       elevation: 8,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20.0)),
       color: widget.pack.color,
       child: Stack(
         children: [
-          // Background pattern
           Positioned.fill(
             child: ClipRRect(
               borderRadius: BorderRadius.circular(20.0),
@@ -771,8 +783,6 @@ class _CardDisplayScreenState extends State<CardDisplayScreen>
               ),
             ),
           ),
-
-          // Card content
           Center(
             child: Padding(
               padding: const EdgeInsets.all(25.0),
@@ -821,11 +831,8 @@ class _CardDisplayScreenState extends State<CardDisplayScreen>
                       height: 1.3,
                     ),
                   ),
-
-                  // Add favorite indicator if card is favorited
-                  if (_favoriteCards.contains(
-                    _shuffledQuestions[_currentIndex],
-                  ))
+                  // Display favorite indicator based on parameter
+                  if (isFavorite)
                     Padding(
                       padding: const EdgeInsets.only(top: 20),
                       child: Container(
@@ -859,8 +866,6 @@ class _CardDisplayScreenState extends State<CardDisplayScreen>
               ),
             ),
           ),
-
-          // Tap to flip back instruction
           Positioned(
             bottom: 15,
             right: 15,
