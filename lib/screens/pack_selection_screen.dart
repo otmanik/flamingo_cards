@@ -99,12 +99,16 @@ class _PackSelectionScreenState extends State<PackSelectionScreen>
       context: context,
       builder:
           (ctx) => AlertDialog(
+            backgroundColor: const Color(0xFF2C2C2C),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(20),
             ),
             title: Text(
               'Coming Soon!',
-              style: GoogleFonts.poppins(fontWeight: FontWeight.bold),
+              style: GoogleFonts.poppins(
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
             ),
             content: Column(
               mainAxisSize: MainAxisSize.min,
@@ -113,7 +117,7 @@ class _PackSelectionScreenState extends State<PackSelectionScreen>
                 const SizedBox(height: 16),
                 Text(
                   'The "${pack.name}" pack is currently in development and will be available soon!',
-                  style: GoogleFonts.poppins(),
+                  style: GoogleFonts.poppins(color: Colors.white70),
                   textAlign: TextAlign.center,
                 ),
               ],
@@ -137,7 +141,7 @@ class _PackSelectionScreenState extends State<PackSelectionScreen>
           (ctx) => Container(
             height: MediaQuery.of(context).size.height * 0.7,
             decoration: const BoxDecoration(
-              color: Colors.white,
+              color: Color(0xFF1E1E1E),
               borderRadius: BorderRadius.only(
                 topLeft: Radius.circular(30),
                 topRight: Radius.circular(30),
@@ -150,7 +154,7 @@ class _PackSelectionScreenState extends State<PackSelectionScreen>
                   height: 5,
                   margin: const EdgeInsets.only(top: 15, bottom: 20),
                   decoration: BoxDecoration(
-                    color: Colors.grey[300],
+                    color: Colors.grey[700],
                     borderRadius: BorderRadius.circular(10),
                   ),
                 ),
@@ -159,6 +163,7 @@ class _PackSelectionScreenState extends State<PackSelectionScreen>
                   style: GoogleFonts.poppins(
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
+                    color: Colors.white,
                   ),
                 ),
                 const SizedBox(height: 20),
@@ -209,7 +214,7 @@ class _PackSelectionScreenState extends State<PackSelectionScreen>
             content,
             style: GoogleFonts.poppins(
               fontSize: 16,
-              color: Colors.black87,
+              color: Colors.grey[300],
               height: 1.5,
             ),
           ),
@@ -253,7 +258,7 @@ class _PackSelectionScreenState extends State<PackSelectionScreen>
               shadows: [
                 Shadow(
                   blurRadius: 10.0,
-                  color: Colors.black.withOpacity(0.3),
+                  color: Colors.black.withOpacity(0.5),
                   offset: const Offset(0, 2),
                 ),
               ],
@@ -290,7 +295,7 @@ class _PackSelectionScreenState extends State<PackSelectionScreen>
             gradient: LinearGradient(
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
-              colors: [Color(0xFFFFF5F7), Color(0xFFFFF0EA)],
+              colors: [Color(0xFF1A1A1A), Color(0xFF121212)],
             ),
           ),
           child:
@@ -303,17 +308,18 @@ class _PackSelectionScreenState extends State<PackSelectionScreen>
                           padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
                           child: TextField(
                             controller: _searchController,
+                            style: GoogleFonts.poppins(color: Colors.white),
                             decoration: InputDecoration(
                               hintText: 'Search card packs...',
                               hintStyle: GoogleFonts.poppins(
-                                color: Colors.grey[400],
+                                color: Colors.grey[500],
                               ),
                               prefixIcon: Icon(
                                 Icons.search,
-                                color: Colors.grey[400],
+                                color: Colors.grey[500],
                               ),
                               filled: true,
-                              fillColor: Colors.white,
+                              fillColor: const Color(0xFF2C2C2C),
                               border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(15),
                                 borderSide: BorderSide.none,
@@ -373,10 +379,10 @@ class _PackSelectionScreenState extends State<PackSelectionScreen>
                                       color:
                                           isSelected
                                               ? Colors.white
-                                              : Colors.black87,
+                                              : Colors.grey[300],
                                     ),
                                   ),
-                                  backgroundColor: Colors.white,
+                                  backgroundColor: const Color(0xFF2C2C2C),
                                   selectedColor: const Color(0xFFFF4081),
                                   showCheckmark: false,
                                   elevation: isSelected ? 3 : 1,
@@ -491,7 +497,7 @@ class _PackSelectionScreenState extends State<PackSelectionScreen>
             style: GoogleFonts.poppins(
               fontSize: 18,
               fontWeight: FontWeight.bold,
-              color: Colors.black87,
+              color: Colors.white,
             ),
           ),
           const SizedBox(height: 8),
@@ -613,20 +619,20 @@ class _PackSelectionScreenState extends State<PackSelectionScreen>
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.search_off_rounded, size: 70, color: Colors.grey[400]),
+          Icon(Icons.search_off_rounded, size: 70, color: Colors.grey[600]),
           const SizedBox(height: 16),
           Text(
             'No card packs found',
             style: GoogleFonts.poppins(
               fontSize: 18,
               fontWeight: FontWeight.w600,
-              color: Colors.grey[700],
+              color: Colors.grey[300],
             ),
           ),
           const SizedBox(height: 8),
           Text(
             'Try a different search term or category',
-            style: GoogleFonts.poppins(fontSize: 14, color: Colors.grey[600]),
+            style: GoogleFonts.poppins(fontSize: 14, color: Colors.grey[400]),
           ),
         ],
       ),
@@ -647,11 +653,11 @@ class PackCard extends StatelessWidget {
       onTap: onTap,
       child: Container(
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: const Color(0xFF2C2C2C),
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
-              color: pack.color.withOpacity(0.3),
+              color: Colors.black.withOpacity(0.3),
               blurRadius: 15,
               offset: const Offset(0, 8),
             ),
@@ -666,7 +672,7 @@ class PackCard extends StatelessWidget {
                 right: -20,
                 top: -20,
                 child: Opacity(
-                  opacity: 0.1,
+                  opacity: 0.15,
                   child: Container(
                     width: 100,
                     height: 100,
@@ -681,7 +687,7 @@ class PackCard extends StatelessWidget {
                 left: -30,
                 bottom: -30,
                 child: Opacity(
-                  opacity: 0.08,
+                  opacity: 0.1,
                   child: Container(
                     width: 80,
                     height: 80,
@@ -727,7 +733,7 @@ class PackCard extends StatelessWidget {
                       style: GoogleFonts.poppins(
                         fontWeight: FontWeight.bold,
                         fontSize: 16,
-                        color: Colors.black87,
+                        color: Colors.white,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -740,7 +746,7 @@ class PackCard extends StatelessWidget {
                         pack.description,
                         style: GoogleFonts.poppins(
                           fontSize: 12,
-                          color: Colors.black54,
+                          color: Colors.grey[400],
                           height: 1.4,
                         ),
                         maxLines: 3,
@@ -758,7 +764,7 @@ class PackCard extends StatelessWidget {
                             vertical: 3,
                           ),
                           decoration: BoxDecoration(
-                            color: pack.color.withOpacity(0.1),
+                            color: pack.color.withOpacity(0.2),
                             borderRadius: BorderRadius.circular(10),
                           ),
                           child: Text(
@@ -786,7 +792,7 @@ class PackCard extends StatelessWidget {
                 Positioned.fill(
                   child: Container(
                     decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.1),
+                      color: Colors.black.withOpacity(0.5),
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Center(
