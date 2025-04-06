@@ -29,7 +29,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Future<void> _loadSettings() async {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
-      _darkMode = prefs.getBool('darkMode') ?? false;
+      _darkMode = prefs.getBool('darkMode') ?? true;
       _soundEffects = prefs.getBool('soundEffects') ?? true;
       _vibration = prefs.getBool('vibration') ?? true;
       _autoFlip = prefs.getBool('autoFlip') ?? false;

@@ -15,10 +15,22 @@ class FavoritesScreen extends StatefulWidget {
 class _FavoritesScreenState extends State<FavoritesScreen> {
   List<Map<String, dynamic>> _favoriteCards = [];
   bool _isLoading = true;
+  bool _darkMode = false;
 
   @override
   void initState() {
     super.initState();
+    _loadSettings();
+  }
+
+  Future<void> _loadSettings() async {
+    // Load dark mode setting
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _darkMode = prefs.getBool('darkMode') ?? false;
+    });
+
+    // Then load favorites
     _loadFavorites();
   }
 
@@ -82,11 +94,16 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
       color: pack.color,
     );
 
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (context) => CardDisplayScreen(pack: customPack),
-      ),
-    );
+    Navigator.of(context)
+        .push(
+          MaterialPageRoute(
+            builder: (context) => CardDisplayScreen(pack: customPack),
+          ),
+        )
+        .then((_) {
+          // Reload settings when returning from card display
+          _loadSettings();
+        });
   }
 
   @override
@@ -103,9 +120,14 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
           ),
         ],
       ),
+      backgroundColor: _darkMode ? const Color(0xFF121212) : Colors.grey[100],
       body:
           _isLoading
-              ? const Center(child: CircularProgressIndicator())
+              ? Center(
+                child: CircularProgressIndicator(
+                  color: _darkMode ? Colors.white70 : null,
+                ),
+              )
               : _favoriteCards.isEmpty
               ? _buildEmptyState()
               : _buildFavoritesList(),
@@ -113,24 +135,28 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
   }
 
   Widget _buildEmptyState() {
+    final textColor = _darkMode ? Colors.white : Colors.grey[700];
+    final secondaryTextColor = _darkMode ? Colors.grey[400] : Colors.grey[600];
+    final iconColor = _darkMode ? Colors.grey[600] : Colors.grey[400];
+
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.favorite_border, size: 80, color: Colors.grey[400]),
+          Icon(Icons.favorite_border, size: 80, color: iconColor),
           const SizedBox(height: 24),
           Text(
             'No Favorites Yet',
             style: GoogleFonts.poppins(
               fontSize: 22,
               fontWeight: FontWeight.bold,
-              color: Colors.grey[700],
+              color: textColor,
             ),
           ),
           const SizedBox(height: 16),
           Text(
             'Add cards to your favorites by tapping the heart icon while viewing a card.',
-            style: GoogleFonts.poppins(fontSize: 16, color: Colors.grey[600]),
+            style: GoogleFonts.poppins(fontSize: 16, color: secondaryTextColor),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 32),
@@ -161,6 +187,10 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
         final isDare = question.toLowerCase().startsWith('dare:');
         final displayText = isDare ? question.substring(5).trim() : question;
 
+        // Card colors based on dark mode
+        final cardColor = _darkMode ? const Color(0xFF2C2C2C) : Colors.white;
+        final textColor = _darkMode ? Colors.white : Colors.black87;
+
         return Padding(
           padding: const EdgeInsets.only(bottom: 16),
           child: Dismissible(
@@ -182,11 +212,14 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
               onTap: () => _openCard(item),
               child: Container(
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: cardColor,
                   borderRadius: BorderRadius.circular(15),
                   boxShadow: [
                     BoxShadow(
-                      color: pack.color.withOpacity(0.2),
+                      color:
+                          _darkMode
+                              ? Colors.black.withOpacity(0.3)
+                              : pack.color.withOpacity(0.2),
                       blurRadius: 10,
                       offset: const Offset(0, 4),
                     ),
@@ -259,7 +292,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                               displayText,
                               style: GoogleFonts.poppins(
                                 fontSize: 16,
-                                color: Colors.black87,
+                                color: textColor,
                                 height: 1.4,
                               ),
                             ),

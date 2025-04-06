@@ -8,13 +8,11 @@ import 'screens/onboarding_screen.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Set preferred orientations
   await SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
     DeviceOrientation.portraitDown,
   ]);
 
-  // Set system UI overlay style
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(
       statusBarColor: Colors.transparent,
@@ -24,25 +22,82 @@ void main() async {
     ),
   );
 
-  // Initialize shared preferences and check if user has seen onboarding
   final prefs = await SharedPreferences.getInstance();
   final hasSeenOnboarding = prefs.getBool('hasSeenOnboarding') ?? false;
+  final isDarkMode = prefs.getBool('darkMode') ?? true;
 
-  runApp(FlamingoCardsApp(hasSeenOnboarding: hasSeenOnboarding));
+  runApp(
+    FlamingoCardsApp(
+      hasSeenOnboarding: hasSeenOnboarding,
+      isDarkMode: isDarkMode,
+    ),
+  );
 }
 
-class FlamingoCardsApp extends StatelessWidget {
+class FlamingoCardsApp extends StatefulWidget {
   final bool hasSeenOnboarding;
+  final bool isDarkMode;
 
-  const FlamingoCardsApp({super.key, required this.hasSeenOnboarding});
+  const FlamingoCardsApp({
+    super.key,
+    required this.hasSeenOnboarding,
+    required this.isDarkMode,
+  });
+
+  @override
+  State<FlamingoCardsApp> createState() => _FlamingoCardsAppState();
+}
+
+class _FlamingoCardsAppState extends State<FlamingoCardsApp> {
+  late bool _isDarkMode;
+
+  @override
+  void initState() {
+    super.initState();
+    _isDarkMode = widget.isDarkMode;
+    _setupDarkModeListener();
+  }
+
+  void _setupDarkModeListener() async {
+    // Listen for changes to the dark mode setting
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    prefs.reload(); // Ensure we have the latest values
+
+    // Set up a periodic check for changes (not ideal but works)
+    // A better solution would be to use a state management solution like Provider
+    Future.delayed(const Duration(seconds: 1), () {
+      if (mounted) {
+        bool newDarkMode = prefs.getBool('darkMode') ?? true;
+        if (newDarkMode != _isDarkMode) {
+          setState(() {
+            _isDarkMode = newDarkMode;
+          });
+        }
+        _setupDarkModeListener();
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
+    // Update system UI based on dark mode
+    SystemChrome.setSystemUIOverlayStyle(
+      SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness:
+            _isDarkMode ? Brightness.light : Brightness.dark,
+        systemNavigationBarColor: _isDarkMode ? Colors.black : Colors.white,
+        systemNavigationBarIconBrightness:
+            _isDarkMode ? Brightness.light : Brightness.dark,
+      ),
+    );
+
     return MaterialApp(
       title: 'Flamingo Cards',
       theme: ThemeData(
         primarySwatch: Colors.pink,
-        scaffoldBackgroundColor: Colors.grey[100],
+        scaffoldBackgroundColor:
+            _isDarkMode ? const Color(0xFF121212) : Colors.grey[100],
         appBarTheme: AppBarTheme(
           elevation: 0,
           centerTitle: true,
@@ -51,9 +106,10 @@ class FlamingoCardsApp extends StatelessWidget {
             fontWeight: FontWeight.bold,
             color: Colors.white,
           ),
-          systemOverlayStyle: const SystemUiOverlayStyle(
+          systemOverlayStyle: SystemUiOverlayStyle(
             statusBarColor: Colors.transparent,
-            statusBarIconBrightness: Brightness.light,
+            statusBarIconBrightness:
+                _isDarkMode ? Brightness.light : Brightness.dark,
           ),
         ),
         cardTheme: CardTheme(
@@ -61,8 +117,13 @@ class FlamingoCardsApp extends StatelessWidget {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(15.0),
           ),
+          color: _isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
         ),
-        textTheme: GoogleFonts.poppinsTextTheme(),
+        textTheme: GoogleFonts.poppinsTextTheme(
+          _isDarkMode
+              ? ThemeData.dark().textTheme
+              : ThemeData.light().textTheme,
+        ),
         elevatedButtonTheme: ElevatedButtonThemeData(
           style: ElevatedButton.styleFrom(
             foregroundColor: Colors.white,
@@ -94,7 +155,7 @@ class FlamingoCardsApp extends StatelessWidget {
         ),
         snackBarTheme: SnackBarThemeData(
           behavior: SnackBarBehavior.floating,
-          backgroundColor: Colors.grey[800],
+          backgroundColor: _isDarkMode ? Colors.grey[900] : Colors.grey[800],
           contentTextStyle: GoogleFonts.poppins(
             color: Colors.white,
             fontSize: 14,
@@ -109,14 +170,17 @@ class FlamingoCardsApp extends StatelessWidget {
           primary: const Color(0xFFFF4081),
           secondary: const Color(0xFFFF9B3D),
           tertiary: const Color(0xFF8E24AA),
-          background: Colors.grey[100]!,
-          surface: Colors.white,
-          brightness: Brightness.light,
+          background: _isDarkMode ? const Color(0xFF121212) : Colors.grey[100]!,
+          surface: _isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
+          brightness: _isDarkMode ? Brightness.dark : Brightness.light,
         ),
         useMaterial3: true,
+        brightness: _isDarkMode ? Brightness.dark : Brightness.light,
       ),
-      // Show onboarding for first-time users, otherwise show splash screen
-      home: hasSeenOnboarding ? const SplashScreen() : const OnboardingScreen(),
+      home:
+          widget.hasSeenOnboarding
+              ? const SplashScreen()
+              : const OnboardingScreen(),
       debugShowCheckedModeBanner: false,
     );
   }
@@ -160,7 +224,6 @@ class _SplashScreenState extends State<SplashScreen>
 
     _animationController.forward();
 
-    // Navigate to the main screen after a delay
     Future.delayed(const Duration(milliseconds: 2500), () {
       if (mounted) {
         Navigator.of(context).pushReplacement(
@@ -219,7 +282,6 @@ class _SplashScreenState extends State<SplashScreen>
               return Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  // Logo animation
                   Transform.scale(
                     scale: _scaleAnimation.value,
                     child: Container(
@@ -245,7 +307,6 @@ class _SplashScreenState extends State<SplashScreen>
                   ),
                   const SizedBox(height: 30),
 
-                  // App name with opacity animation
                   Opacity(
                     opacity: _opacityAnimation.value,
                     child: Text(
@@ -267,7 +328,6 @@ class _SplashScreenState extends State<SplashScreen>
                   ),
                   const SizedBox(height: 10),
 
-                  // Tagline with opacity animation
                   Opacity(
                     opacity: _opacityAnimation.value,
                     child: Text(

@@ -2,6 +2,7 @@ import 'package:flamingo_cards/screens/settings_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../data/card_data.dart';
 import '../models/card_pack.dart';
 import 'card_display_screen.dart';
@@ -21,11 +22,9 @@ class _PackSelectionScreenState extends State<PackSelectionScreen>
   final GlobalKey<ScaffoldMessengerState> _scaffoldKey =
       GlobalKey<ScaffoldMessengerState>();
 
-  // Track search query
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
 
-  // Track selected filter category
   String _selectedCategory = 'All';
   final List<String> _categories = [
     'All',
@@ -34,6 +33,9 @@ class _PackSelectionScreenState extends State<PackSelectionScreen>
     'Party',
     'Deep',
   ];
+
+  // Add dark mode variable
+  bool _darkMode = false;
 
   @override
   void initState() {
@@ -49,6 +51,9 @@ class _PackSelectionScreenState extends State<PackSelectionScreen>
       });
     });
 
+    // Load dark mode setting
+    _loadDarkModeSetting();
+
     Future.delayed(const Duration(milliseconds: 600), () {
       if (mounted) {
         setState(() {
@@ -56,6 +61,14 @@ class _PackSelectionScreenState extends State<PackSelectionScreen>
         });
         _animationController.forward();
       }
+    });
+  }
+
+  // Load the dark mode setting from shared preferences
+  Future<void> _loadDarkModeSetting() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _darkMode = prefs.getBool('darkMode') ?? true;
     });
   }
 
@@ -100,7 +113,7 @@ class _PackSelectionScreenState extends State<PackSelectionScreen>
       context: context,
       builder:
           (ctx) => AlertDialog(
-            backgroundColor: const Color(0xFF2C2C2C),
+            backgroundColor: _darkMode ? const Color(0xFF2C2C2C) : Colors.white,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(20),
             ),
@@ -108,7 +121,7 @@ class _PackSelectionScreenState extends State<PackSelectionScreen>
               'Coming Soon!',
               style: GoogleFonts.poppins(
                 fontWeight: FontWeight.bold,
-                color: Colors.white,
+                color: _darkMode ? Colors.white : Colors.black87,
               ),
             ),
             content: Column(
@@ -118,7 +131,9 @@ class _PackSelectionScreenState extends State<PackSelectionScreen>
                 const SizedBox(height: 16),
                 Text(
                   'The "${pack.name}" pack is currently in development and will be available soon!',
-                  style: GoogleFonts.poppins(color: Colors.white70),
+                  style: GoogleFonts.poppins(
+                    color: _darkMode ? Colors.white70 : Colors.black54,
+                  ),
                   textAlign: TextAlign.center,
                 ),
               ],
@@ -141,9 +156,9 @@ class _PackSelectionScreenState extends State<PackSelectionScreen>
       builder:
           (ctx) => Container(
             height: MediaQuery.of(context).size.height * 0.7,
-            decoration: const BoxDecoration(
-              color: Color(0xFF1E1E1E),
-              borderRadius: BorderRadius.only(
+            decoration: BoxDecoration(
+              color: _darkMode ? const Color(0xFF1E1E1E) : Colors.white,
+              borderRadius: const BorderRadius.only(
                 topLeft: Radius.circular(30),
                 topRight: Radius.circular(30),
               ),
@@ -155,7 +170,7 @@ class _PackSelectionScreenState extends State<PackSelectionScreen>
                   height: 5,
                   margin: const EdgeInsets.only(top: 15, bottom: 20),
                   decoration: BoxDecoration(
-                    color: Colors.grey[700],
+                    color: _darkMode ? Colors.grey[700] : Colors.grey[300],
                     borderRadius: BorderRadius.circular(10),
                   ),
                 ),
@@ -164,7 +179,7 @@ class _PackSelectionScreenState extends State<PackSelectionScreen>
                   style: GoogleFonts.poppins(
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
-                    color: Colors.white,
+                    color: _darkMode ? Colors.white : Colors.black87,
                   ),
                 ),
                 const SizedBox(height: 20),
@@ -215,7 +230,7 @@ class _PackSelectionScreenState extends State<PackSelectionScreen>
             content,
             style: GoogleFonts.poppins(
               fontSize: 16,
-              color: Colors.grey[300],
+              color: _darkMode ? Colors.grey[300] : Colors.grey[700],
               height: 1.5,
             ),
           ),
@@ -226,13 +241,11 @@ class _PackSelectionScreenState extends State<PackSelectionScreen>
 
   List<CardPack> get _filteredPacks {
     return allCardPacks.where((pack) {
-      // Apply text search filter
       final matchesSearch =
           _searchQuery.isEmpty ||
           pack.name.toLowerCase().contains(_searchQuery) ||
           pack.description.toLowerCase().contains(_searchQuery);
 
-      // Apply category filter
       final matchesCategory =
           _selectedCategory == 'All' ||
           pack.category.toLowerCase().contains(_selectedCategory.toLowerCase());
@@ -243,6 +256,28 @@ class _PackSelectionScreenState extends State<PackSelectionScreen>
 
   @override
   Widget build(BuildContext context) {
+    // Define background colors based on dark mode
+    final backgroundColor =
+        _darkMode
+            ? const LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [Color(0xFF1A1A1A), Color(0xFF121212)],
+            )
+            : LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [Colors.grey[100]!, Colors.grey[50]!],
+            );
+
+    final cardBackgroundColor =
+        _darkMode ? const Color(0xFF2C2C2C) : Colors.white;
+
+    final textColor = _darkMode ? Colors.white : Colors.black87;
+    final secondaryTextColor = _darkMode ? Colors.grey[300] : Colors.grey[700];
+    final searchBackgroundColor =
+        _darkMode ? const Color(0xFF2C2C2C) : Colors.grey[200]!;
+
     return ScaffoldMessenger(
       key: _scaffoldKey,
       child: Scaffold(
@@ -272,13 +307,15 @@ class _PackSelectionScreenState extends State<PackSelectionScreen>
             ),
             IconButton(
               icon: const Icon(Icons.settings_outlined, color: Colors.white),
-              onPressed: () {
-                Navigator.push(
+              onPressed: () async {
+                await Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => SettingsScreen(),
-                  ), // Assuming SettingsScreen is a StatefulWidget or StatelessWidget
+                    builder: (context) => const SettingsScreen(),
+                  ),
                 );
+                // Reload dark mode setting when returning from settings screen
+                _loadDarkModeSetting();
               },
             ),
             const SizedBox(width: 8),
@@ -297,13 +334,7 @@ class _PackSelectionScreenState extends State<PackSelectionScreen>
           ),
         ),
         body: Container(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [Color(0xFF1A1A1A), Color(0xFF121212)],
-            ),
-          ),
+          decoration: BoxDecoration(gradient: backgroundColor),
           child:
               _isLoading
                   ? Center(child: CustomProgressIndicator())
@@ -314,18 +345,24 @@ class _PackSelectionScreenState extends State<PackSelectionScreen>
                           padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
                           child: TextField(
                             controller: _searchController,
-                            style: GoogleFonts.poppins(color: Colors.white),
+                            style: GoogleFonts.poppins(color: textColor),
                             decoration: InputDecoration(
                               hintText: 'Search card packs...',
                               hintStyle: GoogleFonts.poppins(
-                                color: Colors.grey[500],
+                                color:
+                                    _darkMode
+                                        ? Colors.grey[500]
+                                        : Colors.grey[600],
                               ),
                               prefixIcon: Icon(
                                 Icons.search,
-                                color: Colors.grey[500],
+                                color:
+                                    _darkMode
+                                        ? Colors.grey[500]
+                                        : Colors.grey[600],
                               ),
                               filled: true,
-                              fillColor: const Color(0xFF2C2C2C),
+                              fillColor: searchBackgroundColor,
                               border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(15),
                                 borderSide: BorderSide.none,
@@ -360,7 +397,6 @@ class _PackSelectionScreenState extends State<PackSelectionScreen>
                           ),
                         ),
 
-                        // Category filter chips
                         SizedBox(
                           height: 50,
                           child: ListView.builder(
@@ -385,10 +421,15 @@ class _PackSelectionScreenState extends State<PackSelectionScreen>
                                       color:
                                           isSelected
                                               ? Colors.white
-                                              : Colors.grey[300],
+                                              : _darkMode
+                                              ? Colors.grey[300]
+                                              : Colors.grey[700],
                                     ),
                                   ),
-                                  backgroundColor: const Color(0xFF2C2C2C),
+                                  backgroundColor:
+                                      _darkMode
+                                          ? const Color(0xFF2C2C2C)
+                                          : Colors.grey[200],
                                   selectedColor: const Color(0xFFFF4081),
                                   showCheckmark: false,
                                   elevation: isSelected ? 3 : 1,
@@ -406,7 +447,6 @@ class _PackSelectionScreenState extends State<PackSelectionScreen>
                           ),
                         ),
 
-                        // Featured pack if no search active
                         if (_searchQuery.isEmpty && _selectedCategory == 'All')
                           _buildFeaturedPack(),
 
@@ -448,6 +488,7 @@ class _PackSelectionScreenState extends State<PackSelectionScreen>
                                                       context,
                                                       pack,
                                                     ),
+                                                darkMode: _darkMode,
                                               ),
                                             ),
                                           ),
@@ -460,13 +501,11 @@ class _PackSelectionScreenState extends State<PackSelectionScreen>
                     ),
                   ),
         ),
-        // Floating action button for random pack
         floatingActionButton:
             _isLoading
                 ? null
                 : FloatingActionButton(
                   onPressed: () {
-                    // Select a random pack that has questions
                     final availablePacks =
                         allCardPacks
                             .where((p) => p.questions.isNotEmpty)
@@ -487,7 +526,6 @@ class _PackSelectionScreenState extends State<PackSelectionScreen>
   }
 
   Widget _buildFeaturedPack() {
-    // Find a featured pack (using DEEP QUESTIONS for now)
     final featuredPack = allCardPacks.firstWhere(
       (pack) => pack.id == 'deep',
       orElse: () => allCardPacks.first,
@@ -503,7 +541,7 @@ class _PackSelectionScreenState extends State<PackSelectionScreen>
             style: GoogleFonts.poppins(
               fontSize: 18,
               fontWeight: FontWeight.bold,
-              color: Colors.white,
+              color: _darkMode ? Colors.white : Colors.black87,
             ),
           ),
           const SizedBox(height: 8),
@@ -531,7 +569,6 @@ class _PackSelectionScreenState extends State<PackSelectionScreen>
               ),
               child: Stack(
                 children: [
-                  // Background decorative elements
                   Positioned(
                     right: -20,
                     top: -20,
@@ -557,7 +594,6 @@ class _PackSelectionScreenState extends State<PackSelectionScreen>
                     ),
                   ),
 
-                  // Content
                   Padding(
                     padding: const EdgeInsets.all(20),
                     child: Row(
@@ -625,20 +661,27 @@ class _PackSelectionScreenState extends State<PackSelectionScreen>
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.search_off_rounded, size: 70, color: Colors.grey[600]),
+          Icon(
+            Icons.search_off_rounded,
+            size: 70,
+            color: _darkMode ? Colors.grey[600] : Colors.grey[400],
+          ),
           const SizedBox(height: 16),
           Text(
             'No card packs found',
             style: GoogleFonts.poppins(
               fontSize: 18,
               fontWeight: FontWeight.w600,
-              color: Colors.grey[300],
+              color: _darkMode ? Colors.grey[300] : Colors.grey[700],
             ),
           ),
           const SizedBox(height: 8),
           Text(
             'Try a different search term or category',
-            style: GoogleFonts.poppins(fontSize: 14, color: Colors.grey[400]),
+            style: GoogleFonts.poppins(
+              fontSize: 14,
+              color: _darkMode ? Colors.grey[400] : Colors.grey[600],
+            ),
           ),
         ],
       ),
@@ -649,21 +692,32 @@ class _PackSelectionScreenState extends State<PackSelectionScreen>
 class PackCard extends StatelessWidget {
   final CardPack pack;
   final VoidCallback onTap;
+  final bool darkMode;
 
-  const PackCard({Key? key, required this.pack, required this.onTap})
-    : super(key: key);
+  const PackCard({
+    Key? key,
+    required this.pack,
+    required this.onTap,
+    required this.darkMode,
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
+    final cardBackgroundColor =
+        darkMode ? const Color(0xFF2C2C2C) : Colors.white;
+
+    final textColor = darkMode ? Colors.white : Colors.black87;
+    final secondaryTextColor = darkMode ? Colors.grey[400] : Colors.grey[700];
+
     return GestureDetector(
       onTap: onTap,
       child: Container(
         decoration: BoxDecoration(
-          color: const Color(0xFF2C2C2C),
+          color: cardBackgroundColor,
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.3),
+              color: Colors.black.withOpacity(darkMode ? 0.4 : 0.1),
               blurRadius: 15,
               offset: const Offset(0, 8),
             ),
@@ -673,7 +727,6 @@ class PackCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(20),
           child: Stack(
             children: [
-              // Background decoration
               Positioned(
                 right: -20,
                 top: -20,
@@ -705,13 +758,11 @@ class PackCard extends StatelessWidget {
                 ),
               ),
 
-              // Card content
               Padding(
                 padding: const EdgeInsets.all(16.0),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Icon
                     Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
@@ -733,26 +784,24 @@ class PackCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 16),
 
-                    // Title
                     Text(
                       pack.name,
                       style: GoogleFonts.poppins(
                         fontWeight: FontWeight.bold,
                         fontSize: 16,
-                        color: Colors.white,
+                        color: textColor,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
                     const SizedBox(height: 4),
 
-                    // Description
                     Expanded(
                       child: Text(
                         pack.description,
                         style: GoogleFonts.poppins(
                           fontSize: 12,
-                          color: Colors.grey[400],
+                          color: secondaryTextColor,
                           height: 1.4,
                         ),
                         maxLines: 3,
@@ -760,7 +809,6 @@ class PackCard extends StatelessWidget {
                       ),
                     ),
 
-                    // Footer
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
@@ -793,7 +841,6 @@ class PackCard extends StatelessWidget {
                 ),
               ),
 
-              // Coming soon overlay
               if (pack.questions.isEmpty)
                 Positioned.fill(
                   child: Container(

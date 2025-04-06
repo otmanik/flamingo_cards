@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:math';
 import 'dart:async';
 import '../models/card_pack.dart';
@@ -23,6 +24,7 @@ class _CardDisplayScreenState extends State<CardDisplayScreen>
   int _currentIndex = 0;
   bool _isCardFlipped = false;
   bool _isFirstLoad = true;
+  bool _darkMode = false;
 
   // Animation controllers
   late AnimationController _flipAnimationController;
@@ -60,9 +62,20 @@ class _CardDisplayScreenState extends State<CardDisplayScreen>
       duration: const Duration(seconds: 2),
     );
 
+    // Load dark mode setting
+    _loadDarkModeSetting();
+
     // Haptic feedback on first load
     Future.delayed(const Duration(milliseconds: 300), () {
       HapticFeedback.mediumImpact();
+    });
+  }
+
+  // Load the dark mode setting from shared preferences
+  Future<void> _loadDarkModeSetting() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _darkMode = prefs.getBool('darkMode') ?? true;
     });
   }
 
@@ -219,9 +232,9 @@ class _CardDisplayScreenState extends State<CardDisplayScreen>
       builder:
           (ctx) => Container(
             padding: const EdgeInsets.all(24),
-            decoration: const BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.only(
+            decoration: BoxDecoration(
+              color: _darkMode ? const Color(0xFF1E1E1E) : Colors.white,
+              borderRadius: const BorderRadius.only(
                 topLeft: Radius.circular(30),
                 topRight: Radius.circular(30),
               ),
@@ -234,7 +247,7 @@ class _CardDisplayScreenState extends State<CardDisplayScreen>
                   height: 5,
                   margin: const EdgeInsets.only(bottom: 24),
                   decoration: BoxDecoration(
-                    color: Colors.grey[300],
+                    color: _darkMode ? Colors.grey[700] : Colors.grey[300],
                     borderRadius: BorderRadius.circular(10),
                   ),
                 ),
@@ -296,7 +309,11 @@ class _CardDisplayScreenState extends State<CardDisplayScreen>
       leading: Icon(icon, color: iconColor ?? widget.pack.color, size: 26),
       title: Text(
         title,
-        style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w500),
+        style: GoogleFonts.poppins(
+          fontSize: 16,
+          fontWeight: FontWeight.w500,
+          color: _darkMode ? Colors.white : Colors.black87,
+        ),
       ),
       onTap: onTap,
       contentPadding: const EdgeInsets.symmetric(vertical: 4),
@@ -309,6 +326,7 @@ class _CardDisplayScreenState extends State<CardDisplayScreen>
       context: context,
       builder:
           (ctx) => AlertDialog(
+            backgroundColor: _darkMode ? const Color(0xFF2C2C2C) : Colors.white,
             title: Text(
               'How to Play',
               style: GoogleFonts.poppins(
@@ -382,7 +400,11 @@ class _CardDisplayScreenState extends State<CardDisplayScreen>
           Expanded(
             child: Text(
               text,
-              style: GoogleFonts.poppins(fontSize: 14, height: 1.4),
+              style: GoogleFonts.poppins(
+                fontSize: 14,
+                height: 1.4,
+                color: _darkMode ? Colors.white : Colors.black87,
+              ),
             ),
           ),
         ],
@@ -396,6 +418,12 @@ class _CardDisplayScreenState extends State<CardDisplayScreen>
         widget.pack.color.computeLuminance() > 0.5
             ? Colors.black87
             : Colors.white;
+
+    // Background color based on dark mode
+    final backgroundColor =
+        _darkMode
+            ? Color.lerp(Colors.black, widget.pack.color, 0.1)!
+            : widget.pack.color.withOpacity(0.1);
 
     return Scaffold(
       extendBodyBehindAppBar: true,
@@ -422,7 +450,7 @@ class _CardDisplayScreenState extends State<CardDisplayScreen>
           ),
         ],
       ),
-      backgroundColor: widget.pack.color.withOpacity(0.1),
+      backgroundColor: backgroundColor,
       body: Stack(
         children: [
           // Confetti animation
@@ -536,7 +564,8 @@ class _CardDisplayScreenState extends State<CardDisplayScreen>
                         width: 200,
                         child: LinearProgressIndicator(
                           value: _remainingSeconds / 5,
-                          backgroundColor: Colors.grey[300],
+                          backgroundColor:
+                              _darkMode ? Colors.grey[800] : Colors.grey[300],
                           valueColor: AlwaysStoppedAnimation<Color>(
                             widget.pack.color,
                           ),
@@ -621,10 +650,14 @@ class _CardDisplayScreenState extends State<CardDisplayScreen>
   }
 
   Widget _buildCardFront(bool isDare, String cardText, Color textColor) {
+    final cardBackgroundColor =
+        _darkMode ? const Color(0xFF2C2C2C) : Colors.white;
+    final watermarkColor = _darkMode ? Colors.white12 : Colors.black12;
+
     return Card(
       elevation: 8,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20.0)),
-      color: Colors.white,
+      color: cardBackgroundColor,
       child: Stack(
         children: [
           // Background pattern
@@ -705,7 +738,7 @@ class _CardDisplayScreenState extends State<CardDisplayScreen>
               child: Text(
                 widget.pack.name,
                 style: GoogleFonts.poppins(
-                  color: Colors.black12,
+                  color: watermarkColor,
                   fontWeight: FontWeight.bold,
                   fontSize: 20,
                 ),
