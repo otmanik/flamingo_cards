@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:superwallkit_flutter/superwallkit_flutter.dart'; // Import Superwall
 import '../data/card_data.dart';
 import '../models/card_pack.dart';
 import 'card_display_screen.dart';
@@ -91,12 +92,37 @@ class _PackSelectionScreenState extends State<PackSelectionScreen>
     super.dispose();
   }
 
-  void _selectPack(BuildContext context, CardPack pack) {
+  // Make the function async
+  void _selectPack(BuildContext context, CardPack pack) async {
     if (pack.questions.isEmpty) {
       _showComingSoonDialog(context, pack);
       return;
     }
 
+    // --- Paywall Logic Start ---
+    if (pack.isPremium) {
+      final subscriptionStatus = await Superwall.shared.subscriptionStatus;
+      bool isSubscribed = subscriptionStatus == SubscriptionStatus.active;
+
+      if (!isSubscribed) {
+        print(
+          "Premium pack selected, user not subscribed. Triggering Superwall event.",
+        );
+        // Register event to potentially show paywall
+        Superwall.shared.registerEvent(
+          "view_premium_pack",
+          params: {'pack_id': pack.id}, // Use pack.id
+        );
+        // Prevent navigation until purchase is handled (in next subtask)
+        return;
+      } else {
+        print("Premium pack selected, user IS subscribed. Allowing access.");
+        // Proceed with navigation below
+      }
+    }
+    // --- Paywall Logic End ---
+
+    // Original navigation logic (runs if not premium or if subscribed)
     Navigator.of(context).push(
       PageRouteBuilder(
         pageBuilder:

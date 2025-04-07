@@ -1,12 +1,82 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'screens/pack_selection_screen.dart';
 import 'screens/onboarding_screen.dart';
+import 'package:superwallkit_flutter/superwallkit_flutter.dart'; // Add Superwall import
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  String apiKey =
+      Platform.isIOS
+          ? "pk_cb3e9b68d88a63a53d7b6bf8bc9f47d24e3c0ebc764e3072"
+          : "MY_ANDROID_API_KEY";
+  // Configure Superwall
+  await Superwall.configure(apiKey);
+
+  // --- Superwall Listeners Start ---
+  Superwall.shared.setSubscriptionStatusDidChangeHandler((newStatus) {
+    print("Subscription status changed: $newStatus");
+    // TODO: Update global app state if necessary based on status change
+    // e.g., refresh user profile, update UI elements showing subscription status
+    if (newStatus == SubscriptionStatus.active) {
+      // Maybe trigger a refresh or notify relevant parts of the app
+      print("Subscription is now active. App state should be updated.");
+    }
+  });
+
+  Superwall.shared.setOnPurchaseHandler((product) async {
+    print("Purchase successful for product: ${product.identifier}");
+    // IMPORTANT: Grant access to the purchased content/feature here.
+    // This might involve:
+    // - Setting a flag in user preferences/state management
+    // - Making an API call to your backend
+    // - Potentially navigating the user to the content they just unlocked
+
+    // Example: If purchase unlocks *all* premium packs:
+    // await AppState.instance.unlockPremiumFeatures(); // Hypothetical state management
+
+    // Example: If purchase unlocks a *specific* pack (less common with Superwall's model, but possible)
+    // You might need context from the registerEvent call, which isn't directly available here.
+    // Usually, Superwall handles entitlement checking via subscriptionStatus.
+
+    // For now, just print. Actual logic depends on app architecture.
+    print(
+      "User now has access (logic to be fully implemented based on app state).",
+    );
+
+    // You might want to dismiss the paywall view controller if it's still visible
+    // Superwall might handle this automatically, check documentation.
+    // Superwall.shared.dismiss(); // If needed
+
+    return PurchaseResult.purchased; // Indicate success
+  });
+
+  Superwall.shared.setOnRestoreHandler((restorePurchasesResult) async {
+    print(
+      "Restore result: ${restorePurchasesResult.restoredSubscriptionStatus}",
+    );
+    if (restorePurchasesResult.restoredSubscriptionStatus ==
+        SubscriptionStatus.active) {
+      print("Restore successful, user is active.");
+      // TODO: Update app state similar to onPurchase
+    } else {
+      print("Restore completed, but no active subscription found.");
+      // TODO: Show appropriate message to user
+    }
+    return RestoreResult.restored; // Indicate restore process completed
+  });
+
+  // Add other handlers as needed (e.g., onDismiss, handleDeepLink, handleCustomPaywallAction)
+  Superwall.shared.setOnDismissHandler((paywallInfo) {
+    print("Paywall dismissed: ${paywallInfo.name}");
+    // Handle dismissal if needed (e.g., user closed paywall without purchasing)
+  });
+  // --- Superwall Listeners End ---
 
   await SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
